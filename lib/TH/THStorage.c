@@ -34,11 +34,11 @@ THLongStorage *THLongStorage_newInferSize(THLongStorage *size, ptrdiff_t nElemen
   if (dim_infer != -1) {
     THDescBuff buf = THLongStorage_sizeDesc(size);
     THArgCheck(total_size > 0 && nElement % total_size == 0, 2,
-        "size '%s' is invalid for input of with %td elements", buf.str, nElement);
+        "size '%s' is invalid for input with %td elements", buf.str, nElement);
   } else {
     THDescBuff buf = THLongStorage_sizeDesc(size);
     THArgCheck(nElement == total_size, 2,
-        "size '%s' is invalid for input of with %td elements", buf.str, nElement);
+        "size '%s' is invalid for input with %td elements", buf.str, nElement);
   }
   THLongStorage* copy = THLongStorage_newWithSize(size->size);
   THLongStorage_copy(copy, size);
@@ -132,6 +132,16 @@ int THLongStorage_inferExpandGeometry(long *tensorSizes, long *tensorStrides, lo
     long stride = (dim >= 0) ?
         tensorStrides[dim] : expandedSizesCalc[i + 1] * expandedStridesCalc[i+1];
     long targetSize = THLongStorage_data(sizes)[i];
+    if (targetSize == -1) {
+      if (dim < 0) {
+        THFree(expandedSizesCalc);
+        THFree(expandedStridesCalc);
+        snprintf(error_buffer, buffer_len, "The expanded size of the tensor (%ld) isn't allowed in a leading, non-existing dimension %ld.", targetSize, i);
+        return -1;
+      } else {
+        targetSize = size;
+      }
+    }
     if (size != targetSize) {
       if (size == 1) {
         size = targetSize;
